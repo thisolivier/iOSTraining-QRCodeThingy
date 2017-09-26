@@ -14,36 +14,25 @@ import Vision
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    // Variable for storing the barcode request
     var qRRequest:VNDetectBarcodesRequest?
+    // Creates a new timer object
     var qRTimer = Timer()
-    var testCounterForTimer:Int = 0
     
     /************************/
     /* The QR Functionality */
     /************************/
-    // Runs a detection with the current image from the sceneView
-    @objc func detectQR(){
-        let cameraCurrent = sceneView.session.currentFrame?.capturedImage
-        let handler = VNImageRequestHandler(cvPixelBuffer: cameraCurrent!, options: [.properties : ""])
-        // Perform the barcode-request. This will call the completion-handler of the barcode-request.
-        guard let _ = try? handler.perform([qRRequest!]) else {
-            return print("Could not perform barcode-request!")
-        }
-    }
+    
     // Setup for a barcode detector
-    func setupCodeRequest(){
-        qRRequest = VNDetectBarcodesRequest(completionHandler: {(request, error) in
-            // Loopm through the found results
+    func setupVisionRequest(){
+        qRRequest = VNDetectBarcodesRequest(completionHandler: {
+            (request, error) in
+            // Loop through the found results
             for result in request.results! {
-                
                 // Cast the result to a barcode-observation
                 if let barcode = result as? VNBarcodeObservation {
-                    // Print barcode-values
-                    print("Payload: \(barcode.payloadStringValue!)")
-                    
                     // Get the bounding box for the bar code and find the center
                     var rect = barcode.boundingBox
-                    // Flip coordinates
                     rect = rect.applying(CGAffineTransform(scaleX: 1, y: -1))
                     rect = rect.applying(CGAffineTransform(translationX: 0, y: 1))
                     let center = CGPoint(x: rect.midX, y: rect.midY)
@@ -52,30 +41,35 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             }
         })
     }
-    // Starts a timer with a callback
+    
+    // Gets the current image from the ARSCNView (Augmented Reality Scene View) and makes an Image Request Handler using that image.
+    // It then calls the handler's perform method, and passes it the request we made earlier.
+    @objc func detectQR(){
+        let cameraCurrent = sceneView.session.currentFrame?.capturedImage
+        let visionImageHandler = VNImageRequestHandler(cvPixelBuffer: cameraCurrent!, options: [.properties : ""])
+        guard let _ = try? visionImageHandler.perform([qRRequest!]) else {
+            return print("Could not perform barcode-request!")
+        }
+    }
+    
+    // Starts a timer with a callback of the QR detection function. Repeats every 1 seconds.
     func scheduledTimerWithTimeInterval(){
-        // Scheduling timer to Call the function "updateCounting" with the interval of 1 seconds
         qRTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.detectQR), userInfo: nil, repeats: true)
     }
     
     override func viewDidLoad() {
+        // Basic setup
         super.viewDidLoad()
-        
-        // Set the view's delegate
         sceneView.delegate = self
+        sceneView.showsStatistics = false
+        setupVisionRequest()
         
-        // Show statistics such as fps and timing information
-        sceneView.showsStatistics = true
-        
-        print("Loaded and empty")
-        setupCodeRequest()
+        // Starts our timer which will detect QR codes on a loop
         scheduledTimerWithTimeInterval()
-        
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        
         // Create a session configuration
         let configuration = ARWorldTrackingConfiguration()
 
