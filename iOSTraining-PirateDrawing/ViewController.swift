@@ -12,18 +12,33 @@ import ARKit
 import Vision
 
 class ViewController: UIViewController, ARSCNViewDelegate {
-
+    
+    /*******************/
+    /* Initialization  */
+    /*******************/
+    
     @IBOutlet var sceneView: ARSCNView!
     // Variable for storing the barcode request
     var qRRequest:VNDetectBarcodesRequest?
     // Creates a new timer object
     var qRTimer = Timer()
     
+    override func viewDidLoad() {
+        // Basic setup
+        super.viewDidLoad()
+        sceneView.delegate = self
+        sceneView.showsStatistics = false
+        setupVisionRequest()
+        
+        // Starts our timer which will detect QR codes on a loop
+        scheduledTimerWithTimeInterval()
+    }
+
     /************************/
     /* The QR Functionality */
     /************************/
     
-    // Setup for a barcode detector
+    // Setup for a barcode detector object, which will scan for barcodes, and process the results
     func setupVisionRequest(){
         qRRequest = VNDetectBarcodesRequest(completionHandler: {
             (request, error) in
@@ -57,16 +72,11 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         qRTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.detectQR), userInfo: nil, repeats: true)
     }
     
-    override func viewDidLoad() {
-        // Basic setup
-        super.viewDidLoad()
-        sceneView.delegate = self
-        sceneView.showsStatistics = false
-        setupVisionRequest()
-        
-        // Starts our timer which will detect QR codes on a loop
-        scheduledTimerWithTimeInterval()
-    }
+    
+    /********************************/
+    /* Fulfilling scene delegate    */
+    /********************************/
+    /* We don't use any of this yet */
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
